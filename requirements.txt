@@ -1,0 +1,45 @@
+# LiveKit AI Avatar Dependencies
+# Core LiveKit packages
+livekit==1.0.12
+livekit-agents==1.2.2
+livekit-api==1.0.5
+livekit-protocol==1.0.4
+
+# LiveKit plugins for AI services
+livekit-plugins-openai==1.2.2
+livekit-plugins-elevenlabs==1.2.2
+livekit-plugins-hedra==1.2.2
+livekit-plugins-silero==1.2.2
+livekit-blingfire==1.0.0
+
+# AI/ML dependencies
+openai==1.98.0
+onnxruntime==1.22.1
+numpy==2.3.2
+pillow==11.3.0
+
+# Audio processing
+sounddevice==0.5.2
+
+# Web/HTTP dependencies
+aiohttp==3.12.15
+httpx==0.28.1
+requests==2.32.4
+websockets==15.0.1
+
+# Async and utilities
+asyncio==3.4.3
+aiofiles==24.1.0
+python-dotenv==1.1.1
+PyJWT==2.10.1
+
+# Monitoring and telemetry
+opentelemetry-api==1.36.0
+opentelemetry-sdk==1.36.0
+opentelemetry-exporter-otlp==1.36.0
+prometheus_client==0.22.1
+
+# Development and utilities
+watchfiles==1.1.0
+tqdm==4.67.1
+coloredlogs==15.0.1 

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head><meta charset="utf-8"><title>Avatar POC</title></head>
+  <body>
+    <h1>Avatar POC Room</h1>
+    <video id="video" autoplay playsinline controls muted style="width:600px;"></video>
+
+    <script src="livekit-client.js"></script>
+    <script>
+      const livekitUrl = "wss://magic-mirror-q5ywtzo4.livekit.cloud"; // ← your LiveKit URL
+      const token      = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJBUEkyNnZqb01xRjhUUDkiLCJzdWIiOiJBUEkyNnZqb01xRjhUUDkiLCJpYXQiOjE3NTQwMjAwNDMsImV4cCI6MTc1NDAyMzY0MywiaWRlbnRpdHkiOiJkZXZhbiIsInZpZGVvIjp7InJvb21Kb2luIjp0cnVlLCJyb29tIjoiZGVmYXVsdCJ9fQ.cvzbwJOd64tHR72CVaOCOCZ9zBvaBGk263kz8i_9vr4";              // ← output of generate_token.py
+
+      async function connect() {
+        try {
+          console.log("🔗 Attempting to connect to LiveKit...");
+          console.log("URL:", livekitUrl);
+          console.log("Token:", token.substring(0, 50) + "...");
+          
+          const room = new Livekit.Room();
+          
+          room.onTrackSubscribed = (track, _, __) => {
+            console.log("📹 Track subscribed:", track.kind);
+            if (track.kind === "video") {
+              track.attach(document.getElementById("video"));
+              console.log("✅ Video track attached to player");
+            }
+          };
+          
+          room.onConnected = () => {
+            console.log("✅ Connected to LiveKit room");
+          };
+          
+          room.onDisconnected = (reason) => {
+            console.log("❌ Disconnected:", reason);
+          };
+          
+          await room.connect(livekitUrl, token);
+        } catch (error) {
+          console.error("❌ Connection failed:", error);
+        }
+      }
+      
+      // Wait for page to load, then connect
+      window.addEventListener('load', () => {
+        // Check if LiveKit library loaded
+        if (typeof Livekit === 'undefined') {
+          console.error('❌ LiveKit library failed to load');
+          document.body.innerHTML += '<p style="color: red;">Error: LiveKit library failed to load. Please check your internet connection.</p>';
+          return;
+        }
+        console.log('✅ LiveKit library loaded successfully');
+        connect();
+      });
+    </script>
+  </body>
+</html>

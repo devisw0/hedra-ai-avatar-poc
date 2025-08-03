@@ -13,9 +13,11 @@ def explore_api():
         print(data)
         # YOUR TURN: Print out what's in the data dictionary
         # Hint: Try print(data) first to see what keys are available
+        return_data = data['origin']
+        print(return_data)
         
 explore_api()
 
-if __name__ = __main__:
+if __name__ == "__main__":
     explore_api()
     
