@@ -1,9 +1,6 @@
 # LiveKit AI Avatar Dependencies
 # Core LiveKit packages
-livekit==1.0.12
 livekit-agents==1.2.2
-livekit-api==1.0.5
-livekit-protocol==1.0.4
 
 # LiveKit plugins for AI services
 livekit-plugins-openai==1.2.2

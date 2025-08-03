@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Cache Bust</title>
+    <script>
+        // Redirect with cache busting parameter
+        const timestamp = Date.now();
+        window.location.href = `index.html?v=${timestamp}`;
+    </script>
+</head>
+<body>
+    <p>Redirecting to fresh page...</p>
+</body>
+</html> 

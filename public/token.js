@@ -1,0 +1,3 @@
+// Generated at 1754241631
+window.LIVEKIT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJBUEkyNnZqb01xRjhUUDkiLCJzdWIiOiJBUEkyNnZqb01xRjhUUDkiLCJpYXQiOjE3NTQyNDE2MzEsImV4cCI6MTc1NDI0NTIzMSwiaWRlbnRpdHkiOiJkZXZhbiIsInZpZGVvIjp7InJvb21Kb2luIjp0cnVlLCJyb29tIjoiZGVmYXVsdCJ9fQ.qM0BrnooTHtlAB0fB0k64B_IQ69FBVcHmNsMikJ8tYI";
+console.log("🔑 Fresh token loaded at", new Date().toLocaleTimeString());

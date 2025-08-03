@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Nuclear Cache Buster</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .controls { margin: 20px 0; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .connect { background: #28a745; color: white; }
+        .disconnect { background: #dc3545; color: white; }
+        .disabled { background: #6c757d; color: white; cursor: not-allowed; }
+        #video { border: 2px solid red; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Nuclear LiveKit Cache Buster</h1>
+    <div class="controls">
+        <button id="connectBtn" class="connect" onclick="connectToRoom()">Connect to Room</button>
+        <button id="disconnectBtn" class="disconnect disabled" onclick="disconnectFromRoom()">Disconnect</button>
+        <button id="micBtn" class="disabled" onclick="toggleMicrophone()">🎤 Enable Mic</button>
+    </div>
+    <div id="status"></div>
+    <video id="video" autoplay playsinline controls muted style="width:600px; display:none;"></video>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const videoEl = document.getElementById('video');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const micBtn = document.getElementById('micBtn');
+        
+        let room = null;
+        let audioTrack = null;
+        let isConnected = false;
+        let isMicEnabled = false;
+
+        function addStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+            statusDiv.appendChild(div);
+            console.log(`${type.toUpperCase()}: ${message}`);
+        }
+
+        function updateControls() {
+            connectBtn.disabled = isConnected;
+            disconnectBtn.disabled = !isConnected;
+            micBtn.disabled = !isConnected;
+            
+            if (isConnected) {
+                connectBtn.className = 'connect disabled';
+                disconnectBtn.className = 'disconnect';
+                micBtn.className = isMicEnabled ? 'disconnect' : 'connect';
+                micBtn.textContent = isMicEnabled ? '🎤 Disable Mic' : '🎤 Enable Mic';
+            } else {
+                connectBtn.className = 'connect';
+                disconnectBtn.className = 'disconnect disabled';
+                micBtn.className = 'disabled';
+                micBtn.textContent = '🎤 Enable Mic';
+            }
+        }
+
+        async function generateFreshToken() {
+            addStatus('🔄 Generating fresh token from server...', 'info');
+            
+            try {
+                const response = await fetch('/generate-token?' + Date.now(), {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const tokenData = await response.text();
+                addStatus(`🔑 Fresh token received: ...${tokenData.slice(-20)}`, 'success');
+                return tokenData.trim();
+                
+            } catch (error) {
+                addStatus(`❌ Failed to get fresh token: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        async function loadLiveKitDynamic() {
+            addStatus('📦 Loading LiveKit library...', 'info');
+            
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = `livekit-client.umd.js?nocache=${Date.now()}`;
+                script.onload = () => {
+                    addStatus('✅ LiveKit library loaded', 'success');
+                    resolve(window.LivekitClient);
+                };
+                script.onerror = () => {
+                    addStatus('❌ Failed to load LiveKit library', 'error');
+                    reject(new Error('LiveKit library failed to load'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        async function connectToRoom() {
+            if (isConnected) {
+                addStatus('⚠️ Already connected!', 'error');
+                return;
+            }
+
+            try {
+                addStatus('🚀 Starting connection process...', 'info');
+                
+                const token = await generateFreshToken();
+                const { Room, LocalAudioTrack } = await loadLiveKitDynamic();
+                
+                const livekitUrl = "wss://magic-mirror-q5ywtzo4.livekit.cloud";
+                
+                addStatus(`🔗 Connecting to LiveKit...`, 'info');
+                addStatus(`🌐 URL: ${livekitUrl}`, 'info');
+                addStatus(`🎫 Token: ${token.substring(0, 20)}...${token.slice(-20)}`, 'info');
+                
+                room = new Room();
+                
+                // Enhanced event handlers
+                room.onTrackSubscribed = (track, publication, participant) => {
+                    addStatus(`📹 Track subscribed: ${track.kind} from ${participant.identity}`, 'success');
+                    addStatus(`📹 Track sid: ${track.sid}`, 'info');
+                    addStatus(`📹 Track name: ${track.name}`, 'info');
+                    
+                    if (track.kind === "video") {
+                        addStatus('🎬 Attaching video track to player...', 'info');
+                        track.attach(videoEl);
+                        videoEl.style.display = 'block';
+                        addStatus('✅ Video track attached and visible', 'success');
+                        
+                        videoEl.onloadedmetadata = () => {
+                            addStatus('🎬 Video metadata loaded', 'success');
+                        };
+                        videoEl.onplay = () => {
+                            addStatus('▶️ Video started playing', 'success');
+                        };
+                        videoEl.onerror = (e) => {
+                            addStatus(`❌ Video error: ${e.message}`, 'error');
+                        };
+                    }
+                };
+
+                room.onTrackUnsubscribed = (track, publication, participant) => {
+                    addStatus(`📹 Track unsubscribed: ${track.kind} from ${participant.identity}`, 'info');
+                };
+
+                room.onParticipantConnected = (participant) => {
+                    addStatus(`👤 Participant connected: ${participant.identity}`, 'success');
+                };
+
+                room.onParticipantDisconnected = (participant) => {
+                    addStatus(`👤 Participant disconnected: ${participant.identity}`, 'info');
+                };
+
+                room.onConnected = async () => {
+                    addStatus('🎉 Successfully connected to LiveKit room!', 'success');
+                    addStatus(`👥 Local participant: ${room.localParticipant.identity}`, 'info');
+                    addStatus(`👥 Remote participants: ${room.participants.size}`, 'info');
+                    
+                    isConnected = true;
+                    updateControls();
+                    
+                    // Auto-enable microphone
+                    await enableMicrophone();
+                };
+
+                room.onDisconnected = (reason) => {
+                    addStatus(`❌ Disconnected: ${reason}`, 'error');
+                    isConnected = false;
+                    isMicEnabled = false;
+                    updateControls();
+                };
+
+                room.onConnectionStateChanged = (state) => {
+                    addStatus(`🔄 Connection state changed: ${state}`, 'info');
+                };
+
+                await room.connect(livekitUrl, token);
+                addStatus('✅ room.connect() completed successfully', 'success');
+                
+            } catch (error) {
+                addStatus(`❌ Connection failed: ${error.message}`, 'error');
+                addStatus(`🔍 Error type: ${error.constructor.name}`, 'error');
+                addStatus(`🔍 Error stack: ${error.stack}`, 'error');
+            }
+        }
+
+        async function disconnectFromRoom() {
+            if (!isConnected || !room) {
+                addStatus('⚠️ Not connected!', 'error');
+                return;
+            }
+
+            try {
+                addStatus('🔌 Disconnecting from room...', 'info');
+                await room.disconnect();
+                addStatus('✅ Disconnected successfully', 'success');
+            } catch (error) {
+                addStatus(`❌ Disconnect error: ${error.message}`, 'error');
+            }
+        }
+
+        async function enableMicrophone() {
+            if (!isConnected || !room) {
+                addStatus('⚠️ Must be connected to enable microphone!', 'error');
+                return;
+            }
+
+            try {
+                addStatus('🎤 Requesting microphone access...', 'info');
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                addStatus('🎤 Microphone access granted', 'success');
+                
+                const { LocalAudioTrack } = await loadLiveKitDynamic();
+                audioTrack = await LocalAudioTrack.create(stream);
+                await room.localParticipant.publishTrack(audioTrack);
+                addStatus('📤 Audio track published successfully', 'success');
+                
+                isMicEnabled = true;
+                updateControls();
+                
+            } catch (error) {
+                addStatus(`❌ Microphone error: ${error.message}`, 'error');
+            }
+        }
+
+        async function disableMicrophone() {
+            if (!isConnected || !audioTrack) {
+                addStatus('⚠️ No microphone to disable!', 'error');
+                return;
+            }
+
+            try {
+                await room.localParticipant.unpublishTrack(audioTrack);
+                audioTrack.stop();
+                audioTrack = null;
+                addStatus('🔇 Microphone disabled', 'success');
+                
+                isMicEnabled = false;
+                updateControls();
+                
+            } catch (error) {
+                addStatus(`❌ Microphone disable error: ${error.message}`, 'error');
+            }
+        }
+
+        async function toggleMicrophone() {
+            if (isMicEnabled) {
+                await disableMicrophone();
+            } else {
+                await enableMicrophone();
+            }
+        }
+
+        // Initialize controls
+        updateControls();
+        
+        addStatus('🚀 Nuclear cache buster ready!', 'info');
+        addStatus('💡 Click "Connect to Room" to start', 'info');
+    </script>
+</body>
+</html> 

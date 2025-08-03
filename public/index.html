@@ -5,10 +5,10 @@
     <h1>Avatar POC Room</h1>
     <video id="video" autoplay playsinline controls muted style="width:600px;"></video>
 
-    <script src="livekit-client.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@latest/dist/livekit-client.umd.js?v=2"></script>
     <script>
       const livekitUrl = "wss://magic-mirror-q5ywtzo4.livekit.cloud"; // ← your LiveKit URL
-      const token      = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJBUEkyNnZqb01xRjhUUDkiLCJzdWIiOiJBUEkyNnZqb01xRjhUUDkiLCJpYXQiOjE3NTQwMjAwNDMsImV4cCI6MTc1NDAyMzY0MywiaWRlbnRpdHkiOiJkZXZhbiIsInZpZGVvIjp7InJvb21Kb2luIjp0cnVlLCJyb29tIjoiZGVmYXVsdCJ9fQ.cvzbwJOd64tHR72CVaOCOCZ9zBvaBGk263kz8i_9vr4";              // ← output of generate_token.py
+      const token      = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJBUEkyNnZqb01xRjhUUDkiLCJzdWIiOiJBUEkyNnZqb01xRjhUUDkiLCJpYXQiOjE3NTQyMzk0MDMsImV4cCI6MTc1NDI0MzAwMywiaWRlbnRpdHkiOiJkZXZhbiIsInZpZGVvIjp7InJvb21Kb2luIjp0cnVlLCJyb29tIjoiZGVmYXVsdCJ9fQ.tPIFJjF6OiIKfuD7obY132uLjtePhOweVoGTr9s_Dec";              // ← output of generate_token.py
 
       async function connect() {
         try {
@@ -16,7 +16,8 @@
           console.log("URL:", livekitUrl);
           console.log("Token:", token.substring(0, 50) + "...");
           
-          const room = new Livekit.Room();
+          const { Room, LocalAudioTrack } = LivekitClient;
+          const room = new Room();
           
           room.onTrackSubscribed = (track, _, __) => {
             console.log("📹 Track subscribed:", track.kind);
@@ -26,8 +27,22 @@
             }
           };
           
-          room.onConnected = () => {
+          room.onConnected = async () => {
             console.log("✅ Connected to LiveKit room");
+            
+            // Get user media (microphone)
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              console.log("🎤 Microphone access granted");
+              
+              // Publish audio track
+              const audioTrack = await LocalAudioTrack.create(stream);
+              await room.localParticipant.publishTrack(audioTrack);
+              console.log("📤 Audio track published to LiveKit");
+              
+            } catch (error) {
+              console.error("❌ Failed to access microphone:", error);
+            }
           };
           
           room.onDisconnected = (reason) => {
@@ -41,14 +56,21 @@
       }
       
       // Wait for page to load, then connect
+      // Force cache bypass
+      const timestamp = Date.now();
+      console.log('🔄 Cache bypass timestamp:', timestamp);
+      
       window.addEventListener('load', () => {
         // Check if LiveKit library loaded
-        if (typeof Livekit === 'undefined') {
-          console.error('❌ LiveKit library failed to load');
-          document.body.innerHTML += '<p style="color: red;">Error: LiveKit library failed to load. Please check your internet connection.</p>';
+        if (typeof LivekitClient === 'undefined') {
+          console.error('❌ LivekitClient global not found — did the UMD script load?');
+          document.body.insertAdjacentHTML(
+            'beforeend',
+            '<p style="color:red;">LiveKit client failed to load.</p>'
+          );
           return;
         }
-        console.log('✅ LiveKit library loaded successfully');
+        console.log('✅ LivekitClient is available:', LivekitClient);
         connect();
       });
     </script>

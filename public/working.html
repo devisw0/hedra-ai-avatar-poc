@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>LiveKit Avatar POC</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+    <h1>LiveKit Avatar POC</h1>
+    <video id="video" autoplay playsinline controls muted style="width:600px;"></video>
+
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@latest/dist/livekit-client.umd.js"></script>
+    <script>
+        const livekitUrl = "wss://magic-mirror-q5ywtzo4.livekit.cloud";
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJBUEkyNnZqb01xRjhUUDkiLCJzdWIiOiJBUEkyNnZqb01xRjhUUDkiLCJpYXQiOjE3NTQyNDE2MzEsImV4cCI6MTc1NDI0NTIzMSwiaWRlbnRpdHkiOiJkZXZhbiIsInZpZGVvIjp7InJvb21Kb2luIjp0cnVlLCJyb29tIjoiZGVmYXVsdCJ9fQ.qM0BrnooTHtlAB0fB0k64B_IQ69FBVcHmNsMikJ8tYI";
+        
+        console.log("🔑 Working solution loaded:", new Date().toLocaleTimeString());
+        console.log("Token ends with:", token.substring(token.length - 20));
+        
+        async function connect() {
+            try {
+                console.log("🔗 Connecting to LiveKit...");
+                
+                const { Room, LocalAudioTrack } = LivekitClient;
+                const room = new Room();
+
+                room.onTrackSubscribed = (track) => {
+                    console.log("📹 Track subscribed:", track.kind);
+                    if (track.kind === "video") {
+                        track.attach(document.getElementById("video"));
+                        console.log("✅ Video track attached");
+                    }
+                };
+
+                room.onConnected = async () => {
+                    console.log("✅ Connected to LiveKit room");
+                    
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        console.log("🎤 Microphone access granted");
+                        
+                        const audioTrack = await LocalAudioTrack.create(stream);
+                        await room.localParticipant.publishTrack(audioTrack);
+                        console.log("📤 Audio track published");
+                        
+                    } catch (error) {
+                        console.error("❌ Failed to access microphone:", error);
+                    }
+                };
+
+                room.onDisconnected = (reason) => {
+                    console.log("❌ Disconnected:", reason);
+                };
+
+                await room.connect(livekitUrl, token);
+            } catch (error) {
+                console.error("❌ Connection failed:", error);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            if (typeof LivekitClient === 'undefined') {
+                console.error('❌ LivekitClient not found');
+                return;
+            }
+            
+            console.log('✅ LivekitClient ready');
+            connect();
+        });
+    </script>
+</body>
+</html> 

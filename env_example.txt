@@ -1,0 +1,7 @@
+# Sanitized .env file structure (actual keys removed for security)
+LIVEKIT_API_KEY=API26vjoMqF8TP9
+LIVEKIT_API_SECRET=7Hg2DXyQiNub6WNuTgrncns2tNMWIiVTLdeHejFNUTW
+LIVEKIT_URL=wss://magic-mirror-q5ywtzo4.livekit.cloud
+
+# Note: This is the structure only. Actual API keys have been removed for security.
+# The real .env file contains the actual LiveKit API credentials. 
